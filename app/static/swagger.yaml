@@ -1,0 +1,318 @@
+openapi: 3.0.0
+info:
+  title: Your API Title
+  description: Your API Description
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:5000
+    description: Development Server
+
+securityDefinitions:
+  apiKey:
+    type: apiKey
+    in: header
+    name: Authorization
+
+paths:
+  /register/:
+    post:
+      summary: Register a new user
+      operationId: addUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  example: securepassword123
+      responses:
+        "201":
+          description: Successfully created new user
+          content:
+            application/json:
+              example:
+                message: Successfully created new user
+                data:
+                  email: john.doe@example.com
+                error: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                message: Please provide user details
+                data: null
+                error: Bad request
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              example:
+                message: User already exists
+                data: null
+                error: Conflict
+        "500":
+          description: Something went wrong
+          content:
+            application/json:
+              example:
+                message: Something went wrong
+                data: null
+                error: Internal Server Error
+
+  /users/login:
+    post:
+      summary: Login to the application
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  example: securepassword123
+      responses:
+        "200":
+          description: Successfully fetched auth token
+          content:
+            application/json:
+              example:
+                message: Successfully fetched auth token
+                data:
+                  user_id: 123
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                error: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                message: Please provide user details
+                data: null
+                error: Bad request
+        "401":
+          description: Error fetching auth token, invalid email or password
+          content:
+            application/json:
+              example:
+                message: Error fetching auth token, invalid email or password
+                data: null
+                error: Unauthorized
+        "404":
+          description: User not found
+          content:
+            application/json:
+              example:
+                message: User not found
+                data: null
+                error: Unauthorized
+        "500":
+          description: Something went wrong
+          content:
+            application/json:
+              example:
+                message: Something went wrong
+                data: null
+                error: Internal Server Error
+
+  /users/:
+    get:
+      summary: Get current user profile
+      produces:
+        - application/json
+      security:
+        - BearerAuth: []  # Reference the security definition
+
+      responses:
+        200:
+          description: Successfully retrieved user profile
+          schema:
+            $ref: '#/definitions/UserResponse'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/Error'
+
+  /books/:
+    post:
+      summary: Add a new book
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: header
+          name: Authorization
+          type: string
+          description: Bearer token for authentication
+          required: true
+        - in: body
+          name: book
+          description: The book to add
+          required: true
+          schema:
+            $ref: '#/definitions/Book'
+      responses:
+        201:
+          description: Successfully created a new book
+          schema:
+            $ref: '#/definitions/BookResponse'
+        400:
+          description: Bad request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/Error'
+
+  /books/{book_id}:
+    get:
+      summary: Get book details by ID
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: book_id
+          type: string
+          required: true
+      responses:
+        200:
+          description: Successfully retrieved a book
+          schema:
+            $ref: '#/definitions/BookResponse'
+        404:
+          description: Book not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Something went wrong
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      summary: Delete a book by ID
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: book_id
+          type: string
+          required: true
+      responses:
+        204:
+          description: Successfully deleted a book
+        400:
+          description: Failed to delete a book
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Book not found for user
+          schema:
+            $ref: '#/definitions/Error'
+
+definitions:
+  User:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+
+  LoginCredentials:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+
+  UserResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/User'
+      error:
+        type: string
+
+  LoginResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      data:
+        type: object
+        properties:
+          token:
+            type: string
+          # Include other user details as needed
+      error:
+        type: string
+
+  BookResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Book'
+      error:
+        type: string
+
+  Book:
+    type: object
+    properties:
+      title:
+        type: string
+      author:
+        type: string
+      category:
+        type: string
+      user_id:
+        type: string
+
+        
+  Error:
+    type: object
+    properties:
+      message:
+        type: string
+      data:
+        type: null
+      error:
+        type: string
+
+
+
+
+
+
+
+
